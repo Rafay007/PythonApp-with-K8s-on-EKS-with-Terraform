@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aisight-svc
+  labels:
+    app: aisight
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: aisight
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studentcourse-deploy
+  labels:
+    app: aisight
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: aisight
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: aisight
+    spec:
+      containers:
+      - image: {{.image_name}}
+        name: aisight
+        env:
+          - name: POSTGRES_SERVER
+            value: postgres-svc
+        ports:
+          - containerPort: 8080
+            name: flaskport

@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:12
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: microservice_myapplication:v1.0
+    environment:
+      DATABASE_URI: ${DATABASE_URI}
+    depends_on:
+      - db
+    ports:
+      - 5000:5000
+    volumes:
+      - .:/app
+
+volumes:
+  db_data:

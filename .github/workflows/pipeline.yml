@@ -1,0 +1,77 @@
+name: Build and Push Docker images to ECR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+  ECR_REPOSITORY_NAME: ${{ secrets.ECR_REPOSITORY_NAME }}
+  POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+  POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+  POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+  DATABASE_URI: ${{ secrets.DATABASE_URI }}
+  TERRAFORM_PATH: ${{ secrets.TERRAFORM_PATH }}
+  K8S_PATH: ${{ secrets.K8S_PATH }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Build Docker images
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          cd ${{ secrets.PROJECT_PATH }}
+          docker compose pull --ignore-pull-failures
+          docker compose build
+          docker image tag microservice_myapplication:v1.0 ${ECR_REPOSITORY}:microservice_myapplicationv1
+          docker image tag postgres:12 ${ECR_REPOSITORY}:postgresv12
+          
+      - name: Create ECR Image repository on AWS
+        run: |
+          cd ${{ secrets.TERRAFORM_PATH }}
+          terraform init
+          terraform apply -target=aws_ecr_repository.ecr -auto-approve
+            
+      - name: Push Docker images
+        run: |
+          docker push ${ECR_REPOSITORY}:microservice_myapplicationv1
+          docker push ${ECR_REPOSITORY}:postgresv12
+          
+      - name: Create EKS cluster on AWS for App Deployment
+        run: |
+          cd ${{ secrets.TERRAFORM_PATH }}
+          terraform apply -auto-approve
+          echo "::set-output name=kubeconfig::$(terraform output kubeconfig)"
+          echo "::set-output name=kubecontext::$(terraform output kubecontext)"
+          
+      - name: Set up Kubeconfig
+        uses: appleboy/kubeconfig-action@v1.1.1
+        with:
+          kubeconfig: ${{ steps.apply.outputs.kubeconfig }}
+          context: ${{ steps.apply.outputs.kubecontext }}
+          
+      - name: Deploy App on EKS Cluster
+        run: |
+          cd ${{ secrets.K8S_PATH }}
+          kubectl apply -f .

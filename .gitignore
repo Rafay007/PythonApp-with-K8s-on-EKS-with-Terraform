@@ -1,0 +1,7 @@
+# Ignore .env file
+.env
+
+# Ignore Python compiled bytecode files
+__pycache__/
+*.pyc
+.terraform
