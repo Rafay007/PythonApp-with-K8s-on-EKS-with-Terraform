@@ -64,6 +64,13 @@ Pluralith was used to create the infrastructure diagram for the project.
 
 ![Infrastructure Diagram](diagram.png)
 
+## Some Images of Running Components
+
+Below are some images of running components which are deleted now
+![ECR Diagram](s1.png)
+![EKS cluster Diagram](s2.png)
+
+
 ## Usage
 
 To run the application locally, you can use Docker Compose:
