@@ -10,6 +10,7 @@ This project is a simple demonstration of a Python Flask API that stores simple 
 
 The project has the following structure:
 
+```bash
 .
 ├── MicroService
 │ ├── app.py
@@ -28,7 +29,7 @@ The project has the following structure:
 │ └── ...
 └── README.md
 └── AWS Network Diagram.pdf
-
+```
 
 ### MicroService Folder
 
@@ -70,5 +71,5 @@ To run the application locally, you can use Docker Compose:
 ```bash
 cd MicroService/
 docker-compose up
-
+```
 To deploy the application on AWS EKS cluster, you can use the GitHub Actions CICD pipeline and Terraform scripts in the IaC folder.
